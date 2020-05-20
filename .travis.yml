@@ -19,7 +19,7 @@ cache: pip
 install:
   - pip install pytest coverage coveralls
 script:
-  - coverage run pytest
+  - coverage run -m pytest
 after_script:
   - coveralls
 
