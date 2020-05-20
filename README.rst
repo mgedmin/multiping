@@ -4,7 +4,7 @@ multiping
 Pings a host once every second and displays the results in an interactive
 ncurses window.
 
-.. image:: docs/screenshot.png
+.. image:: https://raw.githubusercontent.com/mgedmin/multiping/master/docs/screenshot.png
 
 
 Usage: multiping *hostname*
