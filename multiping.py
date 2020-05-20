@@ -1,9 +1,9 @@
 #!/usr/bin/python3
 """
 Multiping version ${version} by Marius Gedminas <marius@gedmin.as>
-Licence: GPL v2 or later
+License: GPL v2 or later
 
-Syntax: multiping hostname
+Usage: multiping hostname
 
 Pings a host every second and displays the results in an ncurses window.
 Legend:
@@ -28,7 +28,7 @@ from threading import Thread
 from time import time, strftime, localtime, sleep
 import os
 
-__version__ = '1.1.1'
+__version__ = '1.2.0'
 __author__ = 'Marius Gedminas <marius@gedmin.as>'
 __url__ = 'https://github.com/mgedmin/scripts/blob/master/multiping.py'
 __licence__ = 'GPL v2 or later'
