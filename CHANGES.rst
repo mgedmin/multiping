@@ -4,6 +4,8 @@ Changelog
 1.2.0 (unreleased)
 ------------------
 
+- Moved to https://github.com/mgedmin/multiping.
+- Added a setup.py, a changelog, and a bunch of other files.
 - First release to PyPI.
 
 
@@ -25,6 +27,7 @@ Changelog
 ------------------
 
 - Ported to Python 3.
+- Now available from https://github.com/mgedmin/scripts/blob/master/multiping.py
 
 
 0.9.4 (2015-04-02)
