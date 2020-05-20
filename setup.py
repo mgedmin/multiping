@@ -25,6 +25,10 @@ setup(
     author="Marius Gedminas",
     author_email="marius@gedmin.as",
     url="https://github.com/mgedmin/multiping",
+    project_urls={
+        'Changelog':
+            'https://github.com/mgedmin/multiping/blob/master/CHANGES.rst',
+    },
     description="ncurses frontend to ping",
     long_description=long_description,
     long_description_content_type='text/x-rst',
