@@ -28,7 +28,7 @@ from threading import Thread
 from time import time, strftime, localtime, sleep
 import os
 
-__version__ = '1.2.0'
+__version__ = '1.2.1.dev0'
 __author__ = 'Marius Gedminas <marius@gedmin.as>'
 __url__ = 'https://github.com/mgedmin/scripts/blob/master/multiping.py'
 __licence__ = 'GPL v2 or later'
