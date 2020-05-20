@@ -20,7 +20,7 @@ with open(os.path.join(here, "multiping.py")) as f:
 version = metadata["__version__"]
 
 setup(
-    name="multiping",
+    name="multiping.py",
     version=version,
     author="Marius Gedminas",
     author_email="marius@gedmin.as",

@@ -1,0 +1,12 @@
+include *.mk
+include *.py
+include *.rst
+include .coveragerc
+include .gitignore
+include .travis.yml
+include LICENSE
+include Makefile
+include pytest.ini
+include tox.ini
+
+exclude docs/*.png
