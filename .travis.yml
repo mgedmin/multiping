@@ -1,0 +1,27 @@
+language: python
+python:
+  - 2.7
+  - 3.5
+  - 3.6
+  - 3.7
+  - 3.8
+  - pypy
+  - pypy3
+
+jobs:
+  include:
+    - name: flake8
+      install: pip install tox
+      script: tox -e flake8
+      after_script:
+
+cache: pip
+install:
+  - pip install pytest coverage coveralls
+script:
+  - coverage run pytest
+after_script:
+  - coveralls
+
+notifications:
+  email: false
