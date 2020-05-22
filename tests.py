@@ -90,6 +90,22 @@ def test_Pinger():
     pinger.join()
 
 
+class LimitedPinger(multiping.Pinger):
+    limit = 30
+
+    def set(self, idx, result):
+        super(LimitedPinger, self).set(idx, result)
+        if idx >= self.limit:
+            self.running = False
+
+
+def test_Pinger_queue(monkeypatch):
+    # This will actually launch 30 ping processes
+    monkeypatch.setattr(multiping, 'sleep', lambda seconds: None)
+    pinger = LimitedPinger('localhost', 1)
+    pinger.run()
+
+
 @pytest.mark.parametrize('argv', [
     'multiping'.split(),
     'multiping -h'.split(),
