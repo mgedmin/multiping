@@ -1,3 +1,9 @@
+import curses
+import sys
+
+import mock
+import pytest
+
 import multiping
 
 
@@ -34,3 +40,21 @@ def test_Pinger():
     pinger.quit()
     assert not pinger.running
     pinger.join()
+
+
+@pytest.mark.parametrize('argv', [
+    'multiping'.split(),
+    'multiping -h'.split(),
+    'multiping --help'.split(),
+])
+def test_main_prints_help(monkeypatch, argv):
+    monkeypatch.setattr(sys, 'argv', argv)
+    with pytest.raises(SystemExit):
+        multiping.main()
+
+
+def test_main_swallows_keyboard_interrupt(monkeypatch):
+    monkeypatch.setattr(sys, 'argv', ['multiping', 'localhost'])
+    monkeypatch.setattr(curses, 'wrapper',
+                        mock.Mock(side_effect=KeyboardInterrupt))
+    multiping.main()

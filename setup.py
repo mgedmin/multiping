@@ -55,6 +55,11 @@ setup(
     py_modules=["multiping"],
     zip_safe=False,
     install_requires=[],
+    extras_require={
+        'test': [
+            'mock',
+        ],
+    },
     entry_points={
         "console_scripts": [
             "multiping = multiping:main",
