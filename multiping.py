@@ -22,11 +22,14 @@ Keys:
   G, end           scroll to bottom
   ^L               redraw
 """
-import sys
+
 import curses
-from threading import Thread
-from time import time, strftime, localtime, sleep
 import os
+import signal
+import sys
+from threading import Thread
+from time import localtime, sleep, strftime, time
+
 
 __version__ = '1.2.1.dev0'
 __author__ = 'Marius Gedminas <marius@gedmin.as>'
@@ -39,17 +42,20 @@ __licence__ = 'GPL v2 or later'
 # (guess what event made me add this limitation? ;)
 QUEUE_LEN = 20
 
+# how many seconds for a ping to be considered slow?
+SLOW_PING = 1.0
+
 
 class Ping(Thread):
 
     def __init__(self, pinger, idx, hostname):
         Thread.__init__(self)
-        self.setDaemon(1)
+        self.setDaemon(True)
         self.pinger = pinger
         self.idx = idx
         self.hostname = hostname
         self.pid = None
-        self.success = 0
+        self.success = False
 
     def run(self):
         start = time()
@@ -69,8 +75,8 @@ class Ping(Thread):
         else:
             status = os.WEXITSTATUS(status)
             if status == 0:
-                self.success = 1
-                if delay > 1:
+                self.success = True
+                if delay > SLOW_PING:
                     result = '%'
                 else:
                     result = '#'
@@ -84,7 +90,7 @@ class Ping(Thread):
         if self.pid:
             # Note that self.pid may be set to None after the check above
             try:
-                os.kill(self.pid, hard and 9 or 15)
+                os.kill(self.pid, signal.SIGKILL if hard else signal.SIGTERM)
             except (OSError, TypeError):
                 pass
 
@@ -93,12 +99,12 @@ class Pinger(Thread):
 
     def __init__(self, hostname, interval):
         Thread.__init__(self)
-        self.setDaemon(1)
+        self.setDaemon(True)
         self.hostname = hostname
         self.interval = interval
         self.status = []
         self.version = 0
-        self.running = 1
+        self.running = True
         self.started = -1
         self.sent = 0
         self.received = 0
@@ -115,7 +121,7 @@ class Pinger(Thread):
             p.start()
             if len(queue) >= QUEUE_LEN:
                 if last_one:
-                    last_one.timeout(1)
+                    last_one.timeout(True)
                     self.sent += 1
                     if last_one.success:
                         self.received += 1
@@ -135,7 +141,7 @@ class Pinger(Thread):
         self.version += 1
 
     def quit(self):
-        self.running = 0
+        self.running = False
 
 
 class UI:
@@ -282,6 +288,11 @@ class UI:
         self.scroll(0)
 
 
+CTRL_D = ord('D') - ord('@')
+CTRL_L = ord('L') - ord('@')
+CTRL_U = ord('U') - ord('@')
+
+
 def _main(stdscr, hostname, interval=1):
     stdscr.addstr(0, 0, "pinging %s" % hostname)
     pinger = Pinger(hostname, interval)
@@ -300,7 +311,7 @@ def _main(stdscr, hostname, interval=1):
         elif c == curses.KEY_RESIZE:
             ui.resize(stdscr.getmaxyx()[0] - 1)
             stdscr.refresh()
-        elif c == 12:  # ^L
+        elif c == CTRL_L:  # ^L
             stdscr.clear()
             ui.draw()
             stdscr.refresh()
@@ -310,10 +321,10 @@ def _main(stdscr, hostname, interval=1):
         elif c in (ord('j'), curses.KEY_DOWN):
             ui.scroll(1)
             stdscr.refresh()
-        elif c in (ord('U') - ord('@'), curses.KEY_PPAGE):
+        elif c in (CTRL_U, curses.KEY_PPAGE):
             ui.scroll(1 - ui.height)
             stdscr.refresh()
-        elif c in (ord('D') - ord('@'), curses.KEY_NPAGE):
+        elif c in (CTRL_D, curses.KEY_NPAGE):
             ui.scroll(ui.height - 1)
             stdscr.refresh()
         elif c in (ord('g'), curses.KEY_HOME):
