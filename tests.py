@@ -184,9 +184,9 @@ class FakeCursesWindow:
 
 class FakeCursesScreen(FakeCursesWindow):
 
-    def __init__(self, **kwargs):
+    def __init__(self, *args, **kwargs):
         self.input_queue = kwargs.pop('input_queue', [])
-        super(FakeCursesScreen, self).__init__(**kwargs)
+        FakeCursesWindow.__init__(self, **kwargs)
 
     def getmaxyx(self):
         return (self._height - 1, self._width - 1)
