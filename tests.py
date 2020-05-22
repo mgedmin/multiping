@@ -1,4 +1,5 @@
 import curses
+import itertools
 import os
 import sys
 import time
@@ -117,8 +118,38 @@ class LimitedPinger(multiping.Pinger):
 def test_Pinger_queue(monkeypatch):
     # This will actually launch 30 ping processes
     monkeypatch.setattr(multiping, 'sleep', lambda seconds: None)
+    monkeypatch.setattr(multiping, 'time', lambda: 12345678)
     pinger = LimitedPinger('localhost', 1)
     pinger.run()
+
+
+def test_Pinger_time_runs_fast(monkeypatch):
+    # This will actually launch 30 ping processes
+    monkeypatch.setattr(multiping, 'sleep', lambda seconds: None)
+    timer = itertools.count(12345000)
+    monkeypatch.setattr(multiping, 'time', lambda: next(timer))
+    pinger = LimitedPinger('localhost', 1)
+    pinger.run()
+
+
+class FakePing:
+    def __init__(self, pinger, idx, hostname):
+        self.success = bool(idx % 2)
+
+    def start(self):
+        pass
+
+    def timeout(self, hard=False):
+        pass
+
+
+def test_Pinger_counts_successes(monkeypatch):
+    monkeypatch.setattr(multiping, 'Ping', FakePing)
+    monkeypatch.setattr(multiping, 'sleep', lambda seconds: None)
+    pinger = LimitedPinger('localhost', 1)
+    pinger.run()
+    assert pinger.sent == 11
+    assert pinger.received == 5
 
 
 class FakeCursesWindow:
@@ -410,6 +441,17 @@ def test_UI_update_resize(fake_curses):
     assert ui.autoscrolling
 
 
+def test_UI_before_start(fake_curses):
+    pinger = FakePinger(hour=12, minute=30)
+    pinger.started = -1
+    win = FakeCursesWindow(width=80, height=6)
+    ui = multiping.UI(win, 1, 0, 30, 5, pinger, 'example.com')
+    ui.draw()
+    ui.scroll(0)
+    ui.scroll_to_top()
+    ui.scroll_to_bottom()
+
+
 CTRL_L = ord('L') - ord('@')
 
 
@@ -421,7 +463,7 @@ def test_main(monkeypatch, fake_curses):
         input_queue=[
             lambda: pinger.set(0, '.'),
             'j', 'k', 'g', 'G', CTRL_L, curses.KEY_PPAGE, curses.KEY_NPAGE,
-            curses.KEY_RESIZE, 'f', 'F', 'q'],
+            curses.KEY_RESIZE, 'f', 'F', ' ', 'q'],
     )
     multiping._main(win, 'localhost')
 

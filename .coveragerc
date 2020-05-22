@@ -1,5 +1,6 @@
 [run]
 source = multiping
+branch = true
 
 [report]
 exclude_lines =
