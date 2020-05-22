@@ -12,16 +12,17 @@ import multiping
 
 class FakePinger:
     def __init__(self, hour=12, minute=30, second=0):
-        self.results = defaultdict(lambda: ' ')
+        self.status = []
         self.version = 0
         self.interval = 1
-        self.status = self.results
         self.sent = self.received = 0
         self.started = time.mktime(
             (2000, 5, 22, hour, minute, second, 0, 0, 0))
 
     def set(self, idx, result):
-        self.results[idx] = result
+        while idx >= len(self.status):
+            self.status.append(' ')
+        self.status[idx] = result
         self.version += 1
 
 
@@ -34,7 +35,7 @@ def test_Ping():
     # this kills the ping process
     ping.timeout(hard=True)
     ping.join()
-    assert 42 in pinger.results
+    assert pinger.status[42] in '!?#%. '
 
 
 def test_Ping_run_child(monkeypatch):
@@ -67,7 +68,7 @@ def test_Ping_run_parent(monkeypatch, delay, status, char):
     pinger = FakePinger()
     ping = multiping.Ping(pinger, 42, 'localhost')
     ping.run()
-    assert pinger.results[42] == char
+    assert pinger.status[42] == char
 
 
 @pytest.mark.parametrize('exc', [OSError, TypeError])
@@ -117,11 +118,15 @@ def test_Pinger_queue(monkeypatch):
 class FakeCursesWindow:
 
     def __init__(self, width=80, height=24):
-        self._screen = [[' '] * width for _ in range(height)]
-        self._row = 0
-        self._col = 0
-        self._width = width
-        self._height = height
+        self._resize(width, height)
+
+    def _resize(self, width=None, height=None):
+        if width:
+            self._width = width
+        if height:
+            self._height = height
+        self.move(0, 0)
+        self._screen = [[' '] * self._width for _ in range(self._height)]
 
     def addstr(self, *args):
         # args may be (row, col, text), or (text, attr), or just (text, )
@@ -228,16 +233,143 @@ def test_UI_draw_autoscroll(fake_curses):
     pinger.set(62, '-')
     pinger.set(93, '.')
     win = FakeCursesWindow(width=80, height=6)
-    ui = multiping.UI(win, 1, 2, 30, 5, pinger, 'example.com')
+    ui = multiping.UI(win, 1, 0, 30, 4, pinger, 'example.com')
     ui.draw()
     assert win._text() == '\n'.join([
-        '  pinging example.com',
-        '  12:30 [   #                          ]',
-        '  12:30 [    %                         ]',
-        '  12:31 [     -                        ]',
-        '  12:31 [      .                       ]',
+        'pinging example.com',
+        '12:30 [   #                          ]',
+        '12:30 [    %                         ]',
+        '12:31 [     -                        ]',
+        '12:31 [      .                       ]',
         '',
     ])
+    pinger.set(124, '!')
+    ui.draw()
+    assert win._text() == '\n'.join([
+        'pinging example.com',
+        '12:30 [    %                         ]',
+        '12:31 [     -                        ]',
+        '12:31 [      .                       ]',
+        '12:32 [       !                      ]',
+        '',
+    ])
+
+
+def test_UI_draw_no_autoscroll(fake_curses):
+    pinger = FakePinger(hour=12, minute=30, second=3)
+    pinger.set(0, '#')
+    pinger.set(31, '%')
+    pinger.set(62, '-')
+    pinger.set(93, '.')
+    win = FakeCursesWindow(width=80, height=6)
+    ui = multiping.UI(win, 1, 0, 30, 4, pinger, 'example.com')
+    ui.draw()
+    assert win._text() == '\n'.join([
+        'pinging example.com',
+        '12:30 [   #                          ]',
+        '12:30 [    %                         ]',
+        '12:31 [     -                        ]',
+        '12:31 [      .                       ]',
+        '',
+    ])
+    ui.autoscrolling = False
+    pinger.set(124, '!')
+    ui.draw()
+    assert win._text() == '\n'.join([
+        'pinging example.com',
+        '12:30 [   #                          ]',
+        '12:30 [    %                         ]',
+        '12:31 [     -                        ]',
+        '12:31 [      .                       ]',
+        '',
+    ])
+
+
+def test_UI_update_no_changes(fake_curses):
+    pinger = FakePinger(hour=12, minute=30)
+    win = FakeCursesWindow(width=80, height=5)
+    ui = multiping.UI(win, 1, 0, 30, 4, pinger, 'example.com')
+    # first update draws
+    assert ui.update()
+    # second doesn't because nothing changed
+    assert not ui.update()
+    # third update draws again
+    pinger.set(0, '#')
+    assert ui.update()
+
+
+HELLO = [
+    (0, 1), (0, 4),
+    (1, 1), (1, 4),
+    (2, 1), (2, 2), (2, 3), (2, 4),
+    (3, 1), (3, 4),
+    (4, 1), (4, 4),
+
+    (0, 7), (0, 8), (0, 9), (0, 10),
+    (1, 7),
+    (2, 7), (2, 8),
+    (3, 7),
+    (4, 7), (4, 8), (4, 9), (4, 10),
+
+    (0, 13),
+    (1, 13),
+    (2, 13),
+    (3, 13),
+    (4, 13), (4, 14), (4, 15), (4, 16),
+
+    (0, 19),
+    (1, 19),
+    (2, 19),
+    (3, 19),
+    (4, 19), (4, 20), (4, 21), (4, 22),
+
+    (0, 26), (0, 27),
+    (1, 25), (1, 28),
+    (2, 25), (2, 28),
+    (3, 25), (3, 28),
+    (4, 26), (4, 27),
+]
+
+
+def test_UI_update_resize(fake_curses):
+    pinger = FakePinger(hour=12, minute=30)
+    for y, x in HELLO:
+        pinger.set(y*30+x, '#')
+    win = FakeCursesWindow(width=80, height=6)
+    ui = multiping.UI(win, 1, 0, 30, 5, pinger, 'example.com')
+    ui.draw()
+    assert win._text() == '\n'.join([
+        'pinging example.com',
+        '12:30 [ #  #  ####  #     #      ##  ]',
+        '12:30 [ #  #  #     #     #     #  # ]',
+        '12:31 [ ####  ##    #     #     #  # ]',
+        '12:31 [ #  #  #     #     #     #  # ]',
+        '12:32 [ #  #  ####  ####  ####   ##  ]',
+    ])
+    win._resize(height=4)
+    ui.resize(3)
+    assert win._text() == '\n'.join([
+        'pinging example.com',
+        '12:31 [ ####  ##    #     #     #  # ]',
+        '12:31 [ #  #  #     #     #     #  # ]',
+        '12:32 [ #  #  ####  ####  ####   ##  ]',
+    ])
+    ui.scroll_to_top()
+    assert win._text() == '\n'.join([
+        'pinging example.com',
+        '12:30 [ #  #  ####  #     #      ##  ]',
+        '12:30 [ #  #  #     #     #     #  # ]',
+        '12:31 [ ####  ##    #     #     #  # ]',
+    ])
+    assert not ui.autoscrolling
+    ui.scroll_to_bottom()
+    assert win._text() == '\n'.join([
+        'pinging example.com',
+        '12:31 [ ####  ##    #     #     #  # ]',
+        '12:31 [ #  #  #     #     #     #  # ]',
+        '12:32 [ #  #  ####  ####  ####   ##  ]',
+    ])
+    assert ui.autoscrolling
 
 
 @pytest.mark.parametrize('argv', [
