@@ -2,7 +2,6 @@ import curses
 import os
 import sys
 import time
-from collections import defaultdict
 
 import mock
 import pytest
@@ -11,13 +10,20 @@ import multiping
 
 
 class FakePinger:
-    def __init__(self, hour=12, minute=30, second=0):
+    def __init__(self, hostname=None, interval=1, hour=12, minute=30,
+                 second=0):
         self.status = []
         self.version = 0
-        self.interval = 1
+        self.interval = interval
         self.sent = self.received = 0
         self.started = time.mktime(
             (2000, 5, 22, hour, minute, second, 0, 0, 0))
+
+    def start(self):
+        pass
+
+    def quit(self):
+        pass
 
     def set(self, idx, result):
         while idx >= len(self.status):
@@ -163,6 +169,10 @@ class FakeCursesWindow:
             for col in range(self._col, self._width):
                 self._screen[row][col] = ' '
 
+    def clear(self):
+        self.move(0, 0)
+        self.clrtobot()
+
     def _lines(self):
         return [
             ''.join(row).rstrip() for row in self._screen
@@ -172,12 +182,40 @@ class FakeCursesWindow:
         return '\n'.join(self._lines())
 
 
+class FakeCursesScreen(FakeCursesWindow):
+
+    def __init__(self, **kwargs):
+        self.input_queue = kwargs.pop('input_queue', [])
+        super(FakeCursesScreen, self).__init__(**kwargs)
+
+    def getmaxyx(self):
+        return (self._height - 1, self._width - 1)
+
+    def getch(self):
+        while True:
+            event = self.input_queue.pop(0)
+            if callable(event):
+                event()
+            elif isinstance(event, str):
+                return ord(event)
+            else:
+                return event
+
+    def refresh(self):
+        pass
+
+
 @pytest.fixture
 def fake_curses(monkeypatch):
-    monkeypatch.setattr(curses, 'use_default_colors', lambda: None)
-    monkeypatch.setattr(curses, 'init_pair', lambda pair, fg, bg: None)
-    monkeypatch.setattr(curses, 'curs_set', lambda visibility: None)
-    monkeypatch.setattr(curses, 'color_pair', lambda pair: pair)
+    mock_curses = mock.Mock()
+    mock_curses.COLUMNS = 80
+    mock_curses.LINES = 24
+    consts = 'A_BOLD KEY_RESIZE KEY_UP KEY_DOWN KEY_PPAGE KEY_NPAGE'.split()
+    for const in consts:
+        setattr(mock_curses, const, getattr(curses, const))
+    mock_curses.color_pair = lambda pair: pair
+    mock_curses.error = curses.error
+    monkeypatch.setattr(multiping, 'curses', mock_curses)
 
 
 def test_UI_draw(fake_curses):
@@ -370,6 +408,22 @@ def test_UI_update_resize(fake_curses):
         '12:32 [ #  #  ####  ####  ####   ##  ]',
     ])
     assert ui.autoscrolling
+
+
+CTRL_L = ord('L') - ord('@')
+
+
+def test_main(monkeypatch, fake_curses):
+    pinger = FakePinger()
+    monkeypatch.setattr(multiping, 'Pinger', lambda *args: pinger)
+    win = FakeCursesScreen(
+        width=80, height=6,
+        input_queue=[
+            lambda: pinger.set(0, '.'),
+            'j', 'k', 'g', 'G', CTRL_L, curses.KEY_PPAGE, curses.KEY_NPAGE,
+            curses.KEY_RESIZE, 'f', 'F', 'q'],
+    )
+    multiping._main(win, 'localhost')
 
 
 @pytest.mark.parametrize('argv', [
