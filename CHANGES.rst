@@ -4,7 +4,7 @@ Changelog
 1.2.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Drop support for Python 3.5.
 
 
 1.2.0 (2020-05-20)
