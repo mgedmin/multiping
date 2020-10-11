@@ -1,11 +1,15 @@
+.PHONY: all
 all:
 	@echo "Nothing to build."
 
-test check:
+.PHONY: test
+test:                   ##: run tests
 	tox -p auto
 
-coverage:
+.PHONY: coverage
+coverage:               ##: measure test coverage
 	tox -e coverage
+
 
 FILE_WITH_VERSION := multiping.py
 DISTCHECK_DIFF_OPTS = $(DISTCHECK_DIFF_DEFAULT_OPTS) -x docs
