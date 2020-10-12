@@ -1,8 +1,10 @@
 import curses
 import itertools
 import os
+import subprocess
 import sys
 import time
+from functools import partial
 
 import mock
 import pytest
@@ -45,30 +47,30 @@ def test_Ping():
     assert pinger.status[42] in '!?#%. '
 
 
-def test_Ping_run_child(monkeypatch):
-    # This is a silly test, good only for catching typos
-    monkeypatch.setattr(os, 'fork', lambda: 0)
-    monkeypatch.setattr(os, 'dup2', lambda fd1, fd2: None)
-    monkeypatch.setattr(os, 'execlp', lambda *argv: None)
-    monkeypatch.setattr(sys, 'exit', lambda rc: None)
-    pinger = FakePinger()
-    ping = multiping.Ping(pinger, 42, 'localhost')
-    ping.run()
+class FakePopen:
+    def __init__(self, command, stdin=None, stdout=None,
+                 stderr=None, returncode=0):
+        self.pid = 123
+        self.returncode = returncode
+
+    def wait(self):
+        return self.returncode
 
 
 @pytest.mark.parametrize('delay, status, char', [
-    # this assumes a certain implementation of WIFSIGNALED and WEXITSTATUS,
-    # i.e. the low 7 bits are signal number, the high 8 bits are exit status
     (0, 0, '#'),
     (2, 0, '%'),
-    (0, 1 << 8, '-'),
-    (0, 99 << 8, '?'),
-    (0, 9, '!'),
+    (0, 1, '-'),
+    (0, OSError(), '?'),
+    (0, -9, '!'),
 ])
 def test_Ping_run_parent(monkeypatch, delay, status, char):
-    # This is a silly test, good only for catching typos
-    monkeypatch.setattr(os, 'fork', lambda: 1234)
-    monkeypatch.setattr(os, 'waitpid', lambda pid, flags: (pid, status))
+    if isinstance(status, Exception):
+        monkeypatch.setattr(
+            subprocess, 'Popen', mock.Mock(side_effect=status))
+    else:
+        monkeypatch.setattr(
+            subprocess, 'Popen', partial(FakePopen, returncode=status))
     now = time.time()
     monkeypatch.setattr(multiping, 'time',
                         mock.Mock(side_effect=[now, now+delay]))
@@ -144,9 +146,8 @@ class FakePing:
 
 
 def test_Pinger_counts_successes(monkeypatch):
-    monkeypatch.setattr(multiping, 'Ping', FakePing)
     monkeypatch.setattr(multiping, 'sleep', lambda seconds: None)
-    pinger = LimitedPinger('localhost', 1)
+    pinger = LimitedPinger('localhost', 1, factory=FakePing)
     pinger.run()
     assert pinger.sent == 11
     assert pinger.received == 5
@@ -457,7 +458,7 @@ CTRL_L = ord('L') - ord('@')
 
 def test_main(monkeypatch, fake_curses):
     pinger = FakePinger()
-    monkeypatch.setattr(multiping, 'Pinger', lambda *args: pinger)
+    monkeypatch.setattr(multiping, 'Pinger', lambda *args, **kw: pinger)
     win = FakeCursesScreen(
         width=80, height=6,
         input_queue=[

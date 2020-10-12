@@ -1,18 +1,21 @@
 #!/usr/bin/python3
 """
-Multiping version ${version} by Marius Gedminas <marius@gedmin.as>
+Multiping by Marius Gedminas <marius@gedmin.as>
 License: GPL v2 or later
 
 Usage: multiping hostname
+       sudo multiping --bluetooh bt_mac_addr
 
 Pings a host every second and displays the results in an ncurses window.
-Legend:
+
+legend:
   #  ping OK
   %  ping OK, response is slow (over 1000 ms)
   -  ping not OK
   !  ping process killed (after 20 seconds)
   ?  cannot execute ping
-Keys:
+
+keys:
   q                quit
   k, up            scroll up
   j, down          scroll down
@@ -23,10 +26,11 @@ Keys:
   ^L               redraw
 """
 
+import argparse
 import curses
 import os
 import signal
-import sys
+import subprocess
 from threading import Thread
 from time import localtime, sleep, strftime, time
 
@@ -48,6 +52,8 @@ SLOW_PING = 1.0
 
 class Ping(Thread):
 
+    command = ['ping', '-c', '1', '-n', '-q']
+
     def __init__(self, pinger, idx, hostname):
         Thread.__init__(self)
         self.setDaemon(True)
@@ -59,29 +65,26 @@ class Ping(Thread):
 
     def run(self):
         start = time()
-        self.pid = os.fork()
-        if not self.pid:
-            null = os.open('/dev/null', os.O_WRONLY)
-            os.dup2(null, 1)
-            os.dup2(null, 2)
-            os.execlp('ping', 'ping', '-c', '1', '-n', '-q', self.hostname)
-            sys.exit(99)  # exec failed!
-            return        # exit failed?!?!?
-        status = os.waitpid(self.pid, 0)[1]
-        self.pid = None
-        delay = time() - start
-        if os.WIFSIGNALED(status):
-            result = '!'
+        try:
+            p = subprocess.Popen(self.command + [self.hostname],
+                                 stdin=subprocess.DEVNULL,
+                                 stdout=subprocess.DEVNULL,
+                                 stderr=subprocess.DEVNULL)
+        except OSError:
+            result = '?'
         else:
-            status = os.WEXITSTATUS(status)
-            if status == 0:
+            self.pid = p.pid
+            status = p.wait()
+            self.pid = None
+            delay = time() - start
+            if status < 0:  # killed by a signal
+                result = '!'
+            elif status == 0:
                 self.success = True
                 if delay > SLOW_PING:
                     result = '%'
                 else:
                     result = '#'
-            elif status == 99:
-                result = '?'
             else:
                 result = '-'
         self.pinger.set(self.idx, result)
@@ -95,11 +98,17 @@ class Ping(Thread):
                 pass
 
 
+class BluetoothPing(Ping):
+
+    command = ['l2ping', '-c', '1', '-t', '10']
+
+
 class Pinger(Thread):
 
-    def __init__(self, hostname, interval):
+    def __init__(self, hostname, interval, factory=Ping):
         Thread.__init__(self)
         self.setDaemon(True)
+        self.factory = factory
         self.hostname = hostname
         self.interval = interval
         self.status = []
@@ -116,7 +125,7 @@ class Pinger(Thread):
         last_one = None
         while self.running:
             self.set(idx, '.')
-            p = Ping(self, idx, self.hostname)
+            p = self.factory(self, idx, self.hostname)
             queue.append(p)
             p.start()
             if len(queue) >= QUEUE_LEN:
@@ -156,6 +165,7 @@ class UI:
         self.version = -1
         self.hostname = hostname
         self.autoscrolling = True
+        self.title = "pinging %s" % hostname
 
         self.row = 0
 
@@ -183,10 +193,10 @@ class UI:
         else:
             loss = 0
         if loss > 0:
-            win.addstr(y-1, x, "pinging %s: packet loss %.1f%%"
-                               % (self.hostname, loss))
+            win.addstr(y-1, x, "%s: packet loss %.1f%%"
+                               % (self.title, loss))
         else:
-            win.addstr(y-1, x, "pinging %s" % self.hostname)
+            win.addstr(y-1, x, self.title)
         win.clrtoeol()
 
         if self.autoscroll() and this_is_an_update:
@@ -293,11 +303,15 @@ CTRL_L = ord('L') - ord('@')
 CTRL_U = ord('U') - ord('@')
 
 
-def _main(stdscr, hostname, interval=1):
-    stdscr.addstr(0, 0, "pinging %s" % hostname)
-    pinger = Pinger(hostname, interval)
+def _main(stdscr, hostname, *, interval=1, bluetooth=False):
+    title = "pinging {}{}".format(
+        hostname, " over bluetooth" if bluetooth else "")
+    stdscr.addstr(0, 0, title)
+    pinger = Pinger(
+        hostname, interval, factory=BluetoothPing if bluetooth else Ping)
     pinger.start()
     ui = UI(stdscr, 1, 0, 60, curses.LINES - 1, pinger, hostname)
+    ui.title = title
     ui.draw()
     stdscr.refresh()
     curses.halfdelay(interval * 5)
@@ -344,12 +358,24 @@ def _main(stdscr, hostname, interval=1):
 
 
 def main():
-    if len(sys.argv) != 2 or sys.argv[1] in ('-h', '--help'):
-        print(__doc__.replace('${version}', __version__))
-        sys.exit(0)
-    hostname = sys.argv[1]
+    parser = argparse.ArgumentParser(
+        description="ping a host every second"
+        " and display the results in an ncurses window",
+        epilog=__doc__[__doc__.index('legend:'):],
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        "--version", action="version",
+        version="%(prog)s version " + __version__)
+    parser.add_argument(
+        '--bluetooth', action="store_true",
+        help='ping a Bluetooth MAC address (needs root)')
+    parser.add_argument(
+        'hostname',
+        help='hostname or IP address to ping')
+    args = parser.parse_args()
     try:
-        curses.wrapper(_main, hostname)
+        curses.wrapper(_main, args.hostname, bluetooth=args.bluetooth)
     except KeyboardInterrupt:
         pass
 

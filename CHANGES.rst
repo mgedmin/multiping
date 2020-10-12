@@ -4,6 +4,7 @@ Changelog
 1.3.0 (unreleased)
 ------------------
 
+- Add support for --bluetooth pinging (via l2ping; requires root).
 - Drop support for Python 3.5 and Python 2.7.
 
 
