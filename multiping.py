@@ -55,8 +55,10 @@ class Ping(Thread):
 
     if platform.system() == 'Windows':
         command = ['ping', '-n', '1']
+        signals = {False: signal.SIGTERM, True: signal.SIGTERM}
     else:
         command = ['ping', '-c', '1', '-n', '-q']
+        signals = {False: signal.SIGTERM, True: signal.SIGKILL}
 
     def __init__(self, pinger, idx, hostname):
         Thread.__init__(self)
@@ -97,7 +99,7 @@ class Ping(Thread):
         if self.pid:
             # Note that self.pid may be set to None after the check above
             try:
-                os.kill(self.pid, signal.SIGKILL if hard else signal.SIGTERM)
+                os.kill(self.pid, self.signals[hard])
             except (OSError, TypeError):
                 pass
 
