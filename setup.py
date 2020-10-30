@@ -53,7 +53,9 @@ setup(
 
     py_modules=["multiping"],
     zip_safe=False,
-    install_requires=[],
+    install_requires=[
+        'windows-curses; platform_system == "Windows"',
+    ],
     extras_require={
         'test': [
             'mock',
