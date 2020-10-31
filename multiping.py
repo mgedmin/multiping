@@ -29,13 +29,14 @@ keys:
 import argparse
 import curses
 import os
+import platform
 import signal
 import subprocess
 from threading import Thread
 from time import localtime, sleep, strftime, time
 
 
-__version__ = '1.3.1.dev0'
+__version__ = '1.4.0.dev0'
 __author__ = 'Marius Gedminas <marius@gedmin.as>'
 __url__ = 'https://github.com/mgedmin/scripts/blob/master/multiping.py'
 __licence__ = 'GPL v2 or later'
@@ -52,7 +53,12 @@ SLOW_PING = 1.0
 
 class Ping(Thread):
 
-    command = ['ping', '-c', '1', '-n', '-q']
+    if platform.system() == 'Windows':
+        command = ['ping', '-n', '1']
+        signals = {False: signal.SIGTERM, True: signal.SIGTERM}
+    else:
+        command = ['ping', '-c', '1', '-n', '-q']
+        signals = {False: signal.SIGTERM, True: signal.SIGKILL}
 
     def __init__(self, pinger, idx, hostname):
         Thread.__init__(self)
@@ -93,7 +99,7 @@ class Ping(Thread):
         if self.pid:
             # Note that self.pid may be set to None after the check above
             try:
-                os.kill(self.pid, signal.SIGKILL if hard else signal.SIGTERM)
+                os.kill(self.pid, self.signals[hard])
             except (OSError, TypeError):
                 pass
 

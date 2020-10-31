@@ -44,7 +44,8 @@ def test_Ping():
     # this kills the ping process
     ping.timeout(hard=True)
     ping.join()
-    assert pinger.status[42] in '!?#%. '
+    # we don't expect any particular result, but we expect a result
+    assert pinger.status[42] in '!?#%-'
 
 
 class FakePopen:

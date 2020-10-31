@@ -40,6 +40,7 @@ setup(
         "Intended Audience :: System Administrators",
         "License :: OSI Approved :: GNU General Public License (GPL)",
         "Operating System :: POSIX",
+        "Operating System :: Microsoft :: Windows",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
@@ -53,7 +54,9 @@ setup(
 
     py_modules=["multiping"],
     zip_safe=False,
-    install_requires=[],
+    install_requires=[
+        'windows-curses; platform_system == "Windows"',
+    ],
     extras_require={
         'test': [
             'mock',

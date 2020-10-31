@@ -1,10 +1,11 @@
 Changelog
 ==========
 
-1.3.1 (unreleased)
+1.4.0 (unreleased)
 ------------------
 
 - Add support for Python 3.9.
+- Experimental Windows support (but not for --bluetooth).
 
 
 1.3.0 (2020-10-12)
