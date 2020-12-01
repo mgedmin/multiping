@@ -1,8 +1,8 @@
 multiping
 =========
 
-.. image:: https://travis-ci.com/mgedmin/multiping.svg?branch=master
-    :target: https://travis-ci.com/mgedmin/multiping
+.. image:: https://github.com/mgedmin/multiping/workflows/build/badge.svg?branch=master
+    :target: https://github.com/mgedmin/multiping/actions
 
 .. image:: https://coveralls.io/repos/mgedmin/multiping/badge.svg?branch=master
     :target: https://coveralls.io/r/mgedmin/multiping
