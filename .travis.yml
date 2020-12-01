@@ -15,7 +15,7 @@ jobs:
 
 cache: pip
 install:
-  - pip install pytest coverage coveralls
+  - pip install pytest coverage coveralls -e .[test]
 script:
   - coverage run -m pytest
   - coverage report -m --fail-under=100
