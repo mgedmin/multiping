@@ -34,6 +34,7 @@ import signal
 import subprocess
 from threading import Thread
 from time import localtime, sleep, strftime, time
+from typing import List, Optional
 
 
 __version__ = '1.4.0.dev0'
@@ -60,16 +61,16 @@ class Ping(Thread):
         command = ['ping', '-c', '1', '-n', '-q']
         signals = {False: signal.SIGTERM, True: signal.SIGKILL}
 
-    def __init__(self, pinger, idx, hostname):
+    def __init__(self, pinger: 'Pinger', idx: int, hostname: str) -> None:
         Thread.__init__(self)
         self.setDaemon(True)
         self.pinger = pinger
         self.idx = idx
         self.hostname = hostname
-        self.pid = None
+        self.pid: Optional[int] = None
         self.success = False
 
-    def run(self):
+    def run(self) -> None:
         start = time()
         try:
             p = subprocess.Popen(self.command + [self.hostname],
@@ -95,7 +96,7 @@ class Ping(Thread):
                 result = '-'
         self.pinger.set(self.idx, result)
 
-    def timeout(self, hard=False):
+    def timeout(self, hard: bool = False) -> None:
         if self.pid:
             # Note that self.pid may be set to None after the check above
             try:
@@ -111,20 +112,20 @@ class BluetoothPing(Ping):
 
 class Pinger(Thread):
 
-    def __init__(self, hostname, interval, factory=Ping):
+    def __init__(self, hostname: str, interval: float, factory=Ping) -> None:
         Thread.__init__(self)
         self.setDaemon(True)
         self.factory = factory
         self.hostname = hostname
         self.interval = interval
-        self.status = []
+        self.status: List[str] = []
         self.version = 0
         self.running = True
-        self.started = -1
+        self.started: float = -1
         self.sent = 0
         self.received = 0
 
-    def run(self):
+    def run(self) -> None:
         self.started = last_time = time()
         idx = 0
         queue = []
@@ -149,19 +150,28 @@ class Pinger(Thread):
             last_time = time()
             idx = max(idx + 1, int((last_time - self.started) / self.interval))
 
-    def set(self, idx, result):
+    def set(self, idx: int, result: str) -> None:
         while idx >= len(self.status):
             self.status.append(' ')
         self.status[idx] = result
         self.version += 1
 
-    def quit(self):
+    def quit(self) -> None:
         self.running = False
 
 
 class UI:
 
-    def __init__(self, win, y, x, width, height, pinger, hostname):
+    def __init__(
+        self,
+        win,
+        y: int,
+        x: int,
+        width: int,
+        height: int,
+        pinger: Pinger,
+        hostname: str,
+    ) -> None:
         self.win = win
         self.y = y
         self.x = x
@@ -183,7 +193,7 @@ class UI:
         self.DGREEN = curses.color_pair(2)
         curses.curs_set(0)
 
-    def _draw(self):
+    def _draw(self) -> None:
         win = self.win
         y = self.y
         x = self.x
@@ -237,7 +247,7 @@ class UI:
             win.move(y, x)
             win.clrtobot()
 
-    def draw(self):
+    def draw(self) -> None:
         try:
             self._draw()
         except curses.error:
@@ -245,7 +255,7 @@ class UI:
             # reduced window size or something
             pass
 
-    def last_row_visible(self):
+    def last_row_visible(self) -> bool:
         max_pos = len(self.pinger.status)
         if self.pinger.started != -1:
             max_pos += int(self.pinger.started) % 60
@@ -253,7 +263,7 @@ class UI:
         return (pos_just_past_the_screen - self.width <= max_pos
                 < pos_just_past_the_screen)
 
-    def autoscroll(self):
+    def autoscroll(self) -> bool:
         if not self.autoscrolling:
             return False
         # autoscroll only if the bottom row was visible and is no longer
@@ -263,14 +273,14 @@ class UI:
             max_pos += int(self.pinger.started) % 60
         return pos_just_past_the_screen <= max_pos - 1
 
-    def update(self):
+    def update(self) -> bool:
         if self.version != self.pinger.version:
             self.draw()
             return True
         else:
             return False
 
-    def scroll(self, delta):
+    def scroll(self, delta: int) -> None:
         self.row += delta
         self.row = max(self.row, 1 - self.height)
 
@@ -281,23 +291,23 @@ class UI:
         self.autoscrolling = self.last_row_visible()
         self.draw()
 
-    def scroll_to_top(self):
+    def scroll_to_top(self) -> None:
         self.row = 0
         self.autoscrolling = self.last_row_visible()
         self.draw()
 
-    def _scroll_to_bottom(self):
+    def _scroll_to_bottom(self) -> None:
         max_pos = len(self.pinger.status)
         if self.pinger.started != -1:
             max_pos += int(self.pinger.started) % 60
         self.row = max(0, int((max_pos - 1) / self.width) - self.height + 1)
 
-    def scroll_to_bottom(self):
+    def scroll_to_bottom(self) -> None:
         self._scroll_to_bottom()
         self.autoscrolling = True
         self.draw()
 
-    def resize(self, new_height):
+    def resize(self, new_height: int) -> None:
         self.height = new_height
         if self.autoscrolling:
             self._scroll_to_bottom()
@@ -309,7 +319,13 @@ CTRL_L = ord('L') - ord('@')
 CTRL_U = ord('U') - ord('@')
 
 
-def _main(stdscr, hostname, *, interval=1, bluetooth=False):
+def _main(
+    stdscr,
+    hostname: str,
+    *,
+    interval: int = 1,
+    bluetooth: bool = False,
+) -> None:
     title = "pinging {}{}".format(
         hostname, " over bluetooth" if bluetooth else "")
     stdscr.addstr(0, 0, title)
@@ -363,7 +379,7 @@ def _main(stdscr, hostname, *, interval=1, bluetooth=False):
             stdscr.refresh()
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="ping a host every second"
         " and display the results in an ncurses window",
