@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 """
 Multiping by Marius Gedminas <marius@gedmin.as>
-License: GPL v2 or later
+License: GPL v2 or v3
 
 Usage: multiping hostname
        sudo multiping --bluetooh bt_mac_addr
@@ -40,7 +40,7 @@ from typing import List, Optional
 __version__ = '1.4.0.dev0'
 __author__ = 'Marius Gedminas <marius@gedmin.as>'
 __url__ = 'https://github.com/mgedmin/scripts/blob/master/multiping.py'
-__licence__ = 'GPL v2 or later'
+__licence__ = 'GPL v2 or v3'  # or ask me for MIT
 
 
 # max number of outstanding ping subprocesses

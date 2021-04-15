@@ -38,7 +38,8 @@ setup(
         "Environment :: Console",
         "Environment :: Console :: Curses",
         "Intended Audience :: System Administrators",
-        "License :: OSI Approved :: GNU General Public License (GPL)",
+        "License :: OSI Approved :: GNU General Public License v2 (GPLv2)",
+        "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Operating System :: POSIX",
         "Operating System :: Microsoft :: Windows",
         "Programming Language :: Python",
@@ -49,7 +50,7 @@ setup(
         "Programming Language :: Python :: Implementation :: CPython",
         "Programming Language :: Python :: Implementation :: PyPy",
     ],
-    license="GPL",
+    license="GPL v2 or v3",
     python_requires=">=3.6",
 
     py_modules=["multiping"],
