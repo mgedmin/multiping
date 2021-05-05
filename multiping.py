@@ -63,7 +63,7 @@ class Ping(Thread):
 
     def __init__(self, pinger: 'Pinger', idx: int, hostname: str) -> None:
         Thread.__init__(self)
-        self.setDaemon(True)
+        self.daemon = True
         self.pinger = pinger
         self.idx = idx
         self.hostname = hostname
@@ -114,7 +114,7 @@ class Pinger(Thread):
 
     def __init__(self, hostname: str, interval: float, factory=Ping) -> None:
         Thread.__init__(self)
-        self.setDaemon(True)
+        self.daemon = True
         self.factory = factory
         self.hostname = hostname
         self.interval = interval
