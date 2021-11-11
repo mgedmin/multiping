@@ -4,7 +4,7 @@ Changelog
 1.4.0 (unreleased)
 ------------------
 
-- Add support for Python 3.9.
+- Add support for Python 3.9 and 3.10.
 - Experimental Windows support (but not for --bluetooth).
 
 
