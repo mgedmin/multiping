@@ -5,6 +5,7 @@ Changelog
 ------------------
 
 - Add support for Python 3.9 and 3.10.
+- Drop support for Python 3.6.
 - Experimental Windows support (but not for --bluetooth).
 
 

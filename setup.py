@@ -43,7 +43,6 @@ setup(
         "Operating System :: POSIX",
         "Operating System :: Microsoft :: Windows",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
@@ -52,7 +51,7 @@ setup(
         "Programming Language :: Python :: Implementation :: PyPy",
     ],
     license="GPL v2 or v3",
-    python_requires=">=3.6",
+    python_requires=">=3.7",
 
     py_modules=["multiping"],
     zip_safe=False,
