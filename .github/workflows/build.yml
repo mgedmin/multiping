@@ -25,6 +25,7 @@ jobs:
           - "3.9"
           - "3.10"
           - "3.11"
+          - "3.12"
           - "pypy-3.7"
 
     steps:
@@ -56,14 +57,14 @@ jobs:
         run: coverage run -m pytest
 
       - name: Check test coverage
-        run: coverage report -m --fail-under=100
+        run: |
+          coverage report -m --fail-under=100
+          coverage xml
 
       - name: Report to coveralls
-        run: coveralls
-        continue-on-error: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          COVERALLS_SERVICE_NAME: github
+        uses: coverallsapp/github-action@v2
+        with:
+          file: coverage.xml
 
   lint:
     name: ${{ matrix.toxenv }}
