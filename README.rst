@@ -1,7 +1,7 @@
 multiping
 =========
 
-.. image:: https://github.com/mgedmin/multiping/workflows/build/badge.svg?branch=master
+.. image:: https://github.com/mgedmin/multiping/actions/workflows/build.yml/badge.svg?branch=master
     :target: https://github.com/mgedmin/multiping/actions
 
 .. image:: https://coveralls.io/repos/mgedmin/multiping/badge.svg?branch=master
