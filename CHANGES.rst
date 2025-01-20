@@ -4,7 +4,7 @@ Changelog
 1.4.2 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Drop support for Python 3.7.
 
 
 1.4.1 (2024-10-09)
