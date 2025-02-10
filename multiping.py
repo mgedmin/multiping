@@ -34,7 +34,7 @@ import signal
 import subprocess
 from threading import Thread
 from time import localtime, sleep, strftime, time
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 
 __version__ = '1.4.2.dev0'
@@ -54,8 +54,8 @@ SLOW_PING = 1.0
 
 class Ping(Thread):
 
-    command: list[str]
-    signals: dict[bool, int]
+    command: List[str]
+    signals: Dict[bool, int]
 
     if platform.system() == 'Windows':  # pragma: nocover
         command = ['ping', '-n', '1']
