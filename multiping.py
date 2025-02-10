@@ -54,6 +54,9 @@ SLOW_PING = 1.0
 
 class Ping(Thread):
 
+    command: list[str]
+    signals: dict[bool, int]
+
     if platform.system() == 'Windows':  # pragma: nocover
         command = ['ping', '-n', '1']
         signals = {False: signal.SIGTERM, True: signal.SIGTERM}
