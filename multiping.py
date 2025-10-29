@@ -34,7 +34,6 @@ import signal
 import subprocess
 from threading import Thread
 from time import localtime, sleep, strftime, time
-from typing import Dict, List, Optional
 
 
 __version__ = '1.5.0.dev0'
@@ -51,18 +50,20 @@ QUEUE_LEN = 20
 # how many seconds for a ping to be considered slow?
 SLOW_PING = 1.0
 
+# the ping command has differences between OSes
+WINDOWS = platform.system() == 'Windows'
+
 
 class Ping(Thread):
 
-    command: List[str]
-    signals: Dict[bool, int]
-
-    if platform.system() == 'Windows':  # pragma: nocover
-        command = ['ping', '-n', '1']
-        signals = {False: signal.SIGTERM, True: signal.SIGTERM}
-    else:
-        command = ['ping', '-c', '1', '-n', '-q']
-        signals = {False: signal.SIGTERM, True: signal.SIGKILL}
+    command: list[str] = (
+        ['ping', '-n', '1'] if WINDOWS else
+        ['ping', '-c', '1', '-n', '-q']  # assume Linux
+    )
+    signals: dict[bool, int] = {
+        False: signal.SIGTERM,
+        True: signal.SIGTERM if WINDOWS else signal.SIGKILL,
+    }
 
     def __init__(self, pinger: 'Pinger', idx: int, hostname: str) -> None:
         Thread.__init__(self)
@@ -70,7 +71,7 @@ class Ping(Thread):
         self.pinger = pinger
         self.idx = idx
         self.hostname = hostname
-        self.pid: Optional[int] = None
+        self.pid: int | None = None
         self.success = False
 
     def run(self) -> None:
@@ -121,7 +122,7 @@ class Pinger(Thread):
         self.factory = factory
         self.hostname = hostname
         self.interval = interval
-        self.status: List[str] = []
+        self.status: list[str] = []
         self.version = 0
         self.running = True
         self.started: float = -1
