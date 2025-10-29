@@ -37,7 +37,7 @@ from time import localtime, sleep, strftime, time
 from typing import Dict, List, Optional
 
 
-__version__ = '1.4.2.dev0'
+__version__ = '1.5.0.dev0'
 __author__ = 'Marius Gedminas <marius@gedmin.as>'
 __url__ = 'https://github.com/mgedmin/scripts/blob/master/multiping.py'
 __licence__ = 'GPL v2 or v3'  # or ask me for MIT
