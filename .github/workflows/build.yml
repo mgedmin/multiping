@@ -14,19 +14,29 @@ on:
 
 jobs:
   build:
-    name: Python ${{ matrix.python-version }}
-    runs-on: ubuntu-latest
+    name: Python ${{ matrix.python-version }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
 
     strategy:
       matrix:
         python-version:
-          - "3.8"
-          - "3.9"
           - "3.10"
           - "3.11"
           - "3.12"
           - "3.13"
-          - "pypy3.10"
+          - "3.14"
+        os:
+          - ubuntu-latest
+          - windows-latest
+        include:
+          # There are no windows-curses wheels for PyPy on PyPI
+          - python-version: "pypy3.10"
+            os: ubuntu-latest
+        exclude:
+          # There are no windows-curses wheels for Python 3.14 yet:
+          # https://github.com/zephyrproject-rtos/windows-curses/issues/76
+          - python-version: "3.14"
+            os: windows-latest
 
     steps:
       - name: Git clone
@@ -36,22 +46,17 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "${{ matrix.python-version }}"
-
-      - name: Pip cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('tox.ini', 'setup.py') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-${{ matrix.python-version }}-
-            ${{ runner.os }}-pip-
+          cache: pip
+          cache-dependency-path: |
+            setup.py
+            tox.ini
 
       - name: Install dependencies
         run: |
           python -m pip install -U pip
           python -m pip install -U setuptools wheel
           python -m pip install -U pytest coverage coveralls
-          python -m pip install -e .[test]
+          python -m pip install -e '.[test]'
 
       - name: Run tests
         run: coverage run -m pytest
