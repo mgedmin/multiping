@@ -3,8 +3,6 @@ include *.py
 include *.rst
 include .coveragerc
 include .gitignore
-include .travis.yml
-include appveyor.yml
 include LICENSE
 include Makefile
 include pytest.ini
