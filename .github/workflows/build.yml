@@ -31,12 +31,12 @@ jobs:
           - windows-latest
         include:
           # There are no windows-curses wheels for PyPy on PyPI
-          - python-version: "pypy3.10"
+          - python-version: "pypy3.11"
             os: ubuntu-latest
         exclude:
           # There are no windows-curses wheels for Python 3.14 yet:
-          # https://github.com/zephyrproject-rtos/windows-curses/issues/76
-          - python-version: "3.14"
+          # https://github.com/zephyrproject-rtos/windows-curses/issues/87
+          - python-version: "3.15"
             os: windows-latest
 
     steps:
